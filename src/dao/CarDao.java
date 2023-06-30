@@ -24,14 +24,14 @@ public class CarDao implements Dao<Integer, Car> {
             """;
     private static final String SAVE_SQL = """
                 INSERT INTO car(model, number, status)
-                VALUES (?, ?, ?, ?, ?)
+                VALUES (?, ?, ?)
                 """;
     private static final String UPDATE_SQL = """
             UPDATE car
             SET
             model = ?,
             number = ?,
-            status
+            status = ?
             WHERE id = ?
             """;
     private static final String FIND_ALL_SQL = """
@@ -52,7 +52,7 @@ public class CarDao implements Dao<Integer, Car> {
             ResultSet resultSet = preparedStatement.executeQuery();
             List<Car> flights = new ArrayList<>();
             while (resultSet.next()) {
-                flights.add(buildFlight(resultSet));
+                flights.add(buildCar(resultSet));
             }
             return flights;
         }
@@ -97,7 +97,7 @@ public class CarDao implements Dao<Integer, Car> {
             preparedStatement.setString(2, entity.getNumber());
             preparedStatement.setString(3, entity.getStatus());
             preparedStatement.setInt(4, entity.getId());
-            preparedStatement.executeUpdate();
+            System.out.println(preparedStatement.executeUpdate() > 0);
         }
     }
 
@@ -110,6 +110,8 @@ public class CarDao implements Dao<Integer, Car> {
             preparedStatement.setString(2, entity.getNumber());
             preparedStatement.setString(3, entity.getStatus());
             var generatedKeys = preparedStatement.getGeneratedKeys();
+            System.out.println(preparedStatement.executeUpdate() > 0);
+            generatedKeys = preparedStatement.getGeneratedKeys();
             if (generatedKeys.next()) {
                 entity.setId(generatedKeys.getInt("id"));
             }
@@ -121,7 +123,7 @@ public class CarDao implements Dao<Integer, Car> {
         return INSTANCE;
     }
 
-    private Car buildFlight(ResultSet resultSet) throws SQLException {
+    private Car buildCar(ResultSet resultSet) throws SQLException {
         return new Car(
                 resultSet.getObject("id", Integer.class),
                 resultSet.getObject("model", String.class),

@@ -7,9 +7,11 @@ import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import util.ConnectionManager;
 
+import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -23,7 +25,7 @@ public class DriverDao implements Dao<Integer, Driver> {
             """;
     private static final String SAVE_SQL = """
                 INSERT INTO driver(name, birth, serial_number, status)
-                VALUES (?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?)
                 """;
     private static final String UPDATE_SQL = """
             UPDATE driver
@@ -31,7 +33,7 @@ public class DriverDao implements Dao<Integer, Driver> {
             name = ?,
             birth = ?,
             serial_number = ?,
-            status
+            status = ?
             WHERE id = ?
             """;
     private static final String FIND_ALL_SQL = """
@@ -71,7 +73,7 @@ public class DriverDao implements Dao<Integer, Driver> {
                 driver = new Driver(
                         result.getInt("id"),
                         result.getString("name"),
-                        result.getTimestamp("birth").toLocalDateTime().toLocalDate(),
+                        result.getDate("birth").toLocalDate(),
                         result.getString("serial_number"),
                         result.getString("status")
                 );
@@ -96,11 +98,11 @@ public class DriverDao implements Dao<Integer, Driver> {
         try (var connection = ConnectionManager.get();
              var preparedStatement = connection.prepareStatement(UPDATE_SQL)) {
             preparedStatement.setString(1, entity.getName());
-            preparedStatement.setString(2, entity.getBirth().toString());
+            preparedStatement.setDate(2, Date.valueOf(entity.getBirth()));
             preparedStatement.setString(3, entity.getSerial_number());
             preparedStatement.setString(4, entity.getStatus());
             preparedStatement.setInt(5, entity.getId());
-            preparedStatement.executeUpdate();
+            System.out.println(preparedStatement.executeUpdate());
         }
     }
 
@@ -110,9 +112,10 @@ public class DriverDao implements Dao<Integer, Driver> {
         try (var connection = ConnectionManager.get();
              var preparedStatement = connection.prepareStatement(SAVE_SQL, Statement.RETURN_GENERATED_KEYS)) {
             preparedStatement.setString(1, entity.getName());
-            preparedStatement.setString(2, entity.getBirth().toString());
+            preparedStatement.setDate(2, Date.valueOf(entity.getBirth()));
             preparedStatement.setString(3, entity.getSerial_number());
             preparedStatement.setString(4, entity.getStatus());
+            System.out.println(preparedStatement.executeUpdate() > 0);
             var generatedKeys = preparedStatement.getGeneratedKeys();
             if (generatedKeys.next()) {
                 entity.setId(generatedKeys.getInt("id"));
@@ -129,7 +132,7 @@ public class DriverDao implements Dao<Integer, Driver> {
         return new Driver(
                 resultSet.getObject("id", Integer.class),
                 resultSet.getObject("name", String.class),
-                resultSet.getObject("birth", Timestamp.class).toLocalDateTime().toLocalDate(),
+                resultSet.getObject("birth", LocalDate.class),
                 resultSet.getObject("serial_number", String.class),
                 resultSet.getObject("status", String.class)
         );
