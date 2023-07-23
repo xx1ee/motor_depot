@@ -3,18 +3,19 @@
   Created by IntelliJ IDEA.
   User: kochetova
   Date: 04.07.2023
-  Time: 17:21
+  Time: 17:15
   To change this template use File | Settings | File Templates.
 --%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <html>
 <head>
-    <title>Пользователи</title>
+    <title>${requestScope.title}</title>
 </head>
 <body>
+<%@include file="header.jsp"%>
 <ul>
-  <c:forEach var ="user"  items = "${requestScope.users}">
-    <li>${user.getDescription()} </li>
+  <c:forEach var ="driver"  items = "${requestScope.drivers}">
+    <li>${driver.getDescription()} </li>
   </c:forEach>
 </ul>
 </body>

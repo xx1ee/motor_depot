@@ -8,6 +8,7 @@
     <title>${requestScope.title}</title>
 </head>
 <body>
+<%@include file="header.jsp"%>
 <ul>
     <c:forEach var ="car"  items = "${requestScope.cars}">
         <li>${car.getDescription()} </li>

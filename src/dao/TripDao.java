@@ -8,6 +8,7 @@ import util.ConnectionManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -41,6 +42,15 @@ public class TripDao implements Dao<Integer, Trip>{
             SELECT *
             FROM trip
             WHERE id = ?
+            """;
+    private static final String FIND_TRIPS_BY_SERIAL_NUMBER = """
+            SELECT *
+            FROM trip
+            JOIN driver ON trip.driver_id = driver.id 
+            WHERE driver.serial_number = ?
+            """;
+    private static final String FIND_TRIPS_PER_DATE = """
+            SELECT * FROM trip WHERE time_arrival between ? AND ?
             """;
     @SneakyThrows
     @Override
@@ -81,6 +91,39 @@ public class TripDao implements Dao<Integer, Trip>{
             return Optional.ofNullable(trip);
         }
     }
+    @SneakyThrows
+    public List<Trip> findBySerialNumber(String serial) {
+        try (var connection = ConnectionManager.get();
+             var preparedStatement = connection.prepareStatement(FIND_TRIPS_BY_SERIAL_NUMBER)) {
+            preparedStatement.setString(1, serial);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            List<Trip> trips = new ArrayList<>();
+
+            while (resultSet.next()) {
+                trips.add(buildTrip(resultSet));
+            }
+
+            return trips;
+        }
+    }
+
+    @SneakyThrows
+    public List<Trip> findPerDate(LocalDateTime startDate, LocalDateTime endDate) {
+        try (var connection = ConnectionManager.get();
+             var preparedStatement = connection.prepareStatement(FIND_TRIPS_PER_DATE)) {
+            preparedStatement.setTimestamp(1, Timestamp.valueOf(startDate));
+            preparedStatement.setTimestamp(2, Timestamp.valueOf(endDate));
+            ResultSet resultSet = preparedStatement.executeQuery();
+            List<Trip> trips = new ArrayList<>();
+
+            while (resultSet.next()) {
+                trips.add(buildTrip(resultSet));
+            }
+
+            return trips;
+        }
+    }
+
 
     @Override
     @SneakyThrows

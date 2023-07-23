@@ -23,6 +23,9 @@ public class DriverDao implements Dao<Integer, Driver> {
     private static final String DELETE_SQL = """
             DELETE FROM driver WHERE id = ?
             """;
+    private static final String DELETE_BY_SERIAL_NUM_SQL = """
+            DELETE FROM driver WHERE serial_number = ?
+            """;
     private static final String SAVE_SQL = """
                 INSERT INTO driver(name, birth, serial_number, status)
                 VALUES (?, ?, ?, ?)
@@ -40,16 +43,43 @@ public class DriverDao implements Dao<Integer, Driver> {
             SELECT *
             FROM driver
             """;
-    public static final String FIND_BY_ID_SQL = """
+    private static final String FIND_BY_ID_SQL = """
             SELECT id, name, birth, serial_number, status
             FROM driver
             WHERE id = ?
+            """;
+    private static final String FIND_FREE_DRIVERS = """
+            SELECT id, name, birth, serial_number, status
+            FROM driver
+            WHERE status = 'Доступен'
+            """;
+    private static final String SET_STATUS_DRIVERS = """
+            update driver set status = 'Доступен'
+            where id in (
+                select driver_id
+                from trip
+                where time_arrival < now()
+                )
             """;
     @SneakyThrows
     @Override
     public List<Driver> findAll() {
         try (var connection = ConnectionManager.get();
              var preparedStatement = connection.prepareStatement(FIND_ALL_SQL)) {
+            ResultSet resultSet = preparedStatement.executeQuery();
+            List<Driver> drivers = new ArrayList<>();
+
+            while (resultSet.next()) {
+                drivers.add(buildDriver(resultSet));
+            }
+
+            return drivers;
+        }
+    }
+    @SneakyThrows
+    public List<Driver> findFree() {
+        try (var connection = ConnectionManager.get();
+             var preparedStatement = connection.prepareStatement(FIND_FREE_DRIVERS)) {
             ResultSet resultSet = preparedStatement.executeQuery();
             List<Driver> drivers = new ArrayList<>();
 
@@ -91,6 +121,14 @@ public class DriverDao implements Dao<Integer, Driver> {
             return preparedStatement.executeUpdate() > 0;
         }
     }
+    @SneakyThrows
+    public boolean delete(String id) {
+        try(var connection = ConnectionManager.get();
+            var preparedStatement = connection.prepareStatement(DELETE_BY_SERIAL_NUM_SQL)) {
+            preparedStatement.setString(1, id);
+            return preparedStatement.executeUpdate() > 0;
+        }
+    }
 
     @Override
     @SneakyThrows
@@ -121,6 +159,13 @@ public class DriverDao implements Dao<Integer, Driver> {
                 entity.setId(generatedKeys.getInt("id"));
             }
             return entity;
+        }
+    }
+    @SneakyThrows
+    public boolean setStatusDrivers() {
+        try(var connection = ConnectionManager.get();
+            var preparedStatement = connection.prepareStatement(DELETE_SQL)) {
+            return preparedStatement.executeUpdate() > 0;
         }
     }
     public static DriverDao getInstance() {
