@@ -56,6 +56,14 @@ public class CarDao implements Dao<Integer, Car> {
     private static final String DELETE_BY_SERIAL_NUM_SQL = """
         DELETE FROM car WHERE number = ?
 """;
+    private static final String SET_STATUS_CARS = """
+            update car set status = 'Доступна'
+            where id in (
+                select car_id
+                from trip
+                where time_arrival < now()
+                )
+            """;
 
     @Override
     @SneakyThrows
@@ -180,6 +188,14 @@ public class CarDao implements Dao<Integer, Car> {
                 );
             }
             return Optional.ofNullable(car);
+        }
+    }
+
+    @SneakyThrows
+    public boolean setStatusCars() {
+        try(var connection = ConnectionManager.get();
+            var preparedStatement = connection.prepareStatement(SET_STATUS_CARS)) {
+            return preparedStatement.executeUpdate() > 0;
         }
     }
 }

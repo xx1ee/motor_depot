@@ -61,6 +61,11 @@ public class DriverDao implements Dao<Integer, Driver> {
                 where time_arrival < now()
                 )
             """;
+    private static final String FIND_BY_SERIAL_NUM_SQL = """
+    SELECT id, name, birth, serial_number, status
+            FROM driver
+            WHERE serial_number = ?
+    """;
     @SneakyThrows
     @Override
     public List<Driver> findAll() {
@@ -164,7 +169,7 @@ public class DriverDao implements Dao<Integer, Driver> {
     @SneakyThrows
     public boolean setStatusDrivers() {
         try(var connection = ConnectionManager.get();
-            var preparedStatement = connection.prepareStatement(DELETE_SQL)) {
+            var preparedStatement = connection.prepareStatement(SET_STATUS_DRIVERS)) {
             return preparedStatement.executeUpdate() > 0;
         }
     }
@@ -181,5 +186,24 @@ public class DriverDao implements Dao<Integer, Driver> {
                 resultSet.getObject("serial_number", String.class),
                 resultSet.getObject("status", String.class)
         );
+    }
+    @SneakyThrows
+    public Optional<Driver> findBySerialNum(String serianNum) {
+        try (var connection = ConnectionManager.get();
+             var statement = connection.prepareStatement(FIND_BY_SERIAL_NUM_SQL)) {
+            statement.setString(1, serianNum);
+            var result = statement.executeQuery();
+            Driver driver= null;
+            if (result.next()) {
+                driver = new Driver(
+                        result.getInt("id"),
+                        result.getString("name"),
+                        result.getDate("birth").toLocalDate(),
+                        result.getString("serial_number"),
+                        result.getString("status")
+                );
+            }
+            return Optional.ofNullable(driver);
+        }
     }
 }

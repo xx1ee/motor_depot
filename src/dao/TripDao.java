@@ -52,6 +52,26 @@ public class TripDao implements Dao<Integer, Trip>{
     private static final String FIND_TRIPS_PER_DATE = """
             SELECT * FROM trip WHERE time_arrival between ? AND ?
             """;
+    private static final String FIND_TRIPS_DEPART_OF = """
+            SELECT * FROM trip WHERE station_depart = ?
+            """;
+    private static final String SET_STATUS_ON_ZAVERSHEN = """
+            update trip set status = 'Завершен' where time_arrival < now();
+            
+            update car set status = 'Доступна'
+            where id in (
+                select car_id
+                from trip
+                where time_arrival < now()
+                );
+                
+            update driver set status = 'Доступен'
+            where id in (
+                select driver_id
+                from trip
+                where time_arrival < now()
+                )
+            """;
     @SneakyThrows
     @Override
     public List<Trip> findAll() {
@@ -123,6 +143,21 @@ public class TripDao implements Dao<Integer, Trip>{
             return trips;
         }
     }
+    @SneakyThrows
+    public List<Trip> findTripsDepartOf(String depart_st) {
+        try (var connection = ConnectionManager.get();
+             var preparedStatement = connection.prepareStatement(FIND_TRIPS_DEPART_OF)) {
+            preparedStatement.setString(1, depart_st);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            List<Trip> trips = new ArrayList<>();
+
+            while (resultSet.next()) {
+                trips.add(buildTrip(resultSet));
+            }
+
+            return trips;
+        }
+    }
 
 
     @Override
@@ -131,6 +166,13 @@ public class TripDao implements Dao<Integer, Trip>{
         try(var connection = ConnectionManager.get();
             var preparedStatement = connection.prepareStatement(DELETE_SQL)) {
             preparedStatement.setLong(1, id);
+            return preparedStatement.executeUpdate() > 0;
+        }
+    }
+    @SneakyThrows
+    public boolean zaversh() {
+        try(var connection = ConnectionManager.get();
+            var preparedStatement = connection.prepareStatement(SET_STATUS_ON_ZAVERSHEN)) {
             return preparedStatement.executeUpdate() > 0;
         }
     }
