@@ -12,6 +12,7 @@
     <title>Рейсы</title>
 </head>
 <body>
+<%@include file="header.jsp"%>
 <ul>
     <c:forEach var ="trip"  items = "${requestScope.trips}">
         <li>${trip.getDescription()}

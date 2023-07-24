@@ -5,16 +5,17 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import service.DriverService;
-import service.UsersService;
+import service.TripService;
 
 import java.io.IOException;
-@WebServlet("/users")
-public class UserServlet extends HttpServlet {
-    private final UsersService usersService = UsersService.getInstance();
+
+@WebServlet("/deleteTrip")
+public class DeleteTripServlet extends HttpServlet {
+    private static final TripService tripService = TripService.getInstance();
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        req.setAttribute("users", usersService.findAll());
-        req.getRequestDispatcher("WEB-INF/jsp/users.jsp").forward(req, resp);
+        tripService.delete(Integer.valueOf(req.getParameter("id")));
+        req.getRequestDispatcher("/WEB-INF/jsp/trips.jsp").forward(req, resp);
     }
 }
