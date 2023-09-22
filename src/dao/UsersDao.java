@@ -44,6 +44,11 @@ public class UsersDao implements  Dao<Integer, Users>{
             FROM users
             WHERE id = ?
             """;
+    public static final String FIND_BY_EMAIL_SQL = """
+            SELECT *
+            from users
+            WHERE email = ? AND password = ?
+            """;
     @SneakyThrows
     @Override
     public List<Users> findAll() {
@@ -135,6 +140,22 @@ public class UsersDao implements  Dao<Integer, Users>{
                 resultSet.getObject("role", String.class),
                 resultSet.getObject("image", String.class)
         );
+    }
+
+    @SneakyThrows
+    public List<Users> findByEmailAndPassword(String email, String password) {
+        try (var connection = ConnectionManager.get();
+             var statement = connection.prepareStatement(FIND_BY_EMAIL_SQL)) {
+            statement.setString(1, email);
+            statement.setString(2, password);
+            var resultSet = statement.executeQuery();
+            List<Users> users = new ArrayList<>();
+
+            while (resultSet.next()) {
+                users.add(buildUsers(resultSet));
+            }
+            return users;
+        }
     }
 
 }

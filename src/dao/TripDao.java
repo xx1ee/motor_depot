@@ -8,6 +8,7 @@ import util.ConnectionManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -15,7 +16,7 @@ import java.util.Optional;
 public class TripDao implements Dao<Integer, Trip>{
     private static final TripDao INSTANCE = new TripDao();
     private static final String DELETE_SQL = """
-            DELETE FROM driver WHERE id = ?
+            DELETE FROM trip WHERE id = ?
             """;
     private static final String SAVE_SQL = """
                 INSERT INTO trip(driver_id, car_id, station_depart, station_arrival, time_depart, time_arrival, status)
@@ -41,6 +42,35 @@ public class TripDao implements Dao<Integer, Trip>{
             SELECT *
             FROM trip
             WHERE id = ?
+            """;
+    private static final String FIND_TRIPS_BY_SERIAL_NUMBER = """
+            SELECT *
+            FROM trip
+            JOIN driver ON trip.driver_id = driver.id 
+            WHERE driver.serial_number = ?
+            """;
+    private static final String FIND_TRIPS_PER_DATE = """
+            SELECT * FROM trip WHERE time_arrival between ? AND ?
+            """;
+    private static final String FIND_TRIPS_DEPART_OF = """
+            SELECT * FROM trip WHERE station_depart = ?
+            """;
+    private static final String SET_STATUS_ON_ZAVERSHEN = """
+            update trip set status = 'Завершен' where time_arrival < now();
+            
+            update car set status = 'Доступна'
+            where id in (
+                select car_id
+                from trip
+                where time_arrival < now()
+                );
+                
+            update driver set status = 'Доступен'
+            where id in (
+                select driver_id
+                from trip
+                where time_arrival < now()
+                )
             """;
     @SneakyThrows
     @Override
@@ -81,6 +111,54 @@ public class TripDao implements Dao<Integer, Trip>{
             return Optional.ofNullable(trip);
         }
     }
+    @SneakyThrows
+    public List<Trip> findBySerialNumber(String serial) {
+        try (var connection = ConnectionManager.get();
+             var preparedStatement = connection.prepareStatement(FIND_TRIPS_BY_SERIAL_NUMBER)) {
+            preparedStatement.setString(1, serial);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            List<Trip> trips = new ArrayList<>();
+
+            while (resultSet.next()) {
+                trips.add(buildTrip(resultSet));
+            }
+
+            return trips;
+        }
+    }
+
+    @SneakyThrows
+    public List<Trip> findPerDate(LocalDateTime startDate, LocalDateTime endDate) {
+        try (var connection = ConnectionManager.get();
+             var preparedStatement = connection.prepareStatement(FIND_TRIPS_PER_DATE)) {
+            preparedStatement.setTimestamp(1, Timestamp.valueOf(startDate));
+            preparedStatement.setTimestamp(2, Timestamp.valueOf(endDate));
+            ResultSet resultSet = preparedStatement.executeQuery();
+            List<Trip> trips = new ArrayList<>();
+
+            while (resultSet.next()) {
+                trips.add(buildTrip(resultSet));
+            }
+
+            return trips;
+        }
+    }
+    @SneakyThrows
+    public List<Trip> findTripsDepartOf(String depart_st) {
+        try (var connection = ConnectionManager.get();
+             var preparedStatement = connection.prepareStatement(FIND_TRIPS_DEPART_OF)) {
+            preparedStatement.setString(1, depart_st);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            List<Trip> trips = new ArrayList<>();
+
+            while (resultSet.next()) {
+                trips.add(buildTrip(resultSet));
+            }
+
+            return trips;
+        }
+    }
+
 
     @Override
     @SneakyThrows
@@ -88,6 +166,13 @@ public class TripDao implements Dao<Integer, Trip>{
         try(var connection = ConnectionManager.get();
             var preparedStatement = connection.prepareStatement(DELETE_SQL)) {
             preparedStatement.setLong(1, id);
+            return preparedStatement.executeUpdate() > 0;
+        }
+    }
+    @SneakyThrows
+    public boolean zaversh() {
+        try(var connection = ConnectionManager.get();
+            var preparedStatement = connection.prepareStatement(SET_STATUS_ON_ZAVERSHEN)) {
             return preparedStatement.executeUpdate() > 0;
         }
     }

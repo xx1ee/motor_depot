@@ -11,5 +11,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class UsersDto {
     private Integer id;
+    private String image;
     private String description;
 }

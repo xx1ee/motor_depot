@@ -1,5 +1,7 @@
 package util;
 
+import lombok.experimental.UtilityClass;
+
 import java.io.IOException;
 import java.util.Properties;
 

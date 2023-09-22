@@ -23,6 +23,9 @@ public class DriverDao implements Dao<Integer, Driver> {
     private static final String DELETE_SQL = """
             DELETE FROM driver WHERE id = ?
             """;
+    private static final String DELETE_BY_SERIAL_NUM_SQL = """
+            DELETE FROM driver WHERE serial_number = ?
+            """;
     private static final String SAVE_SQL = """
                 INSERT INTO driver(name, birth, serial_number, status)
                 VALUES (?, ?, ?, ?)
@@ -40,16 +43,48 @@ public class DriverDao implements Dao<Integer, Driver> {
             SELECT *
             FROM driver
             """;
-    public static final String FIND_BY_ID_SQL = """
+    private static final String FIND_BY_ID_SQL = """
             SELECT id, name, birth, serial_number, status
             FROM driver
             WHERE id = ?
             """;
+    private static final String FIND_FREE_DRIVERS = """
+            SELECT id, name, birth, serial_number, status
+            FROM driver
+            WHERE status = 'Доступен'
+            """;
+    private static final String SET_STATUS_DRIVERS = """
+            update driver set status = 'Доступен'
+            where id in (
+                select driver_id
+                from trip
+                where time_arrival < now()
+                )
+            """;
+    private static final String FIND_BY_SERIAL_NUM_SQL = """
+    SELECT id, name, birth, serial_number, status
+            FROM driver
+            WHERE serial_number = ?
+    """;
     @SneakyThrows
     @Override
     public List<Driver> findAll() {
         try (var connection = ConnectionManager.get();
              var preparedStatement = connection.prepareStatement(FIND_ALL_SQL)) {
+            ResultSet resultSet = preparedStatement.executeQuery();
+            List<Driver> drivers = new ArrayList<>();
+
+            while (resultSet.next()) {
+                drivers.add(buildDriver(resultSet));
+            }
+
+            return drivers;
+        }
+    }
+    @SneakyThrows
+    public List<Driver> findFree() {
+        try (var connection = ConnectionManager.get();
+             var preparedStatement = connection.prepareStatement(FIND_FREE_DRIVERS)) {
             ResultSet resultSet = preparedStatement.executeQuery();
             List<Driver> drivers = new ArrayList<>();
 
@@ -91,6 +126,14 @@ public class DriverDao implements Dao<Integer, Driver> {
             return preparedStatement.executeUpdate() > 0;
         }
     }
+    @SneakyThrows
+    public boolean delete(String id) {
+        try(var connection = ConnectionManager.get();
+            var preparedStatement = connection.prepareStatement(DELETE_BY_SERIAL_NUM_SQL)) {
+            preparedStatement.setString(1, id);
+            return preparedStatement.executeUpdate() > 0;
+        }
+    }
 
     @Override
     @SneakyThrows
@@ -123,6 +166,13 @@ public class DriverDao implements Dao<Integer, Driver> {
             return entity;
         }
     }
+    @SneakyThrows
+    public boolean setStatusDrivers() {
+        try(var connection = ConnectionManager.get();
+            var preparedStatement = connection.prepareStatement(SET_STATUS_DRIVERS)) {
+            return preparedStatement.executeUpdate() > 0;
+        }
+    }
     public static DriverDao getInstance() {
         return INSTANCE;
     }
@@ -136,5 +186,24 @@ public class DriverDao implements Dao<Integer, Driver> {
                 resultSet.getObject("serial_number", String.class),
                 resultSet.getObject("status", String.class)
         );
+    }
+    @SneakyThrows
+    public Optional<Driver> findBySerialNum(String serianNum) {
+        try (var connection = ConnectionManager.get();
+             var statement = connection.prepareStatement(FIND_BY_SERIAL_NUM_SQL)) {
+            statement.setString(1, serianNum);
+            var result = statement.executeQuery();
+            Driver driver= null;
+            if (result.next()) {
+                driver = new Driver(
+                        result.getInt("id"),
+                        result.getString("name"),
+                        result.getDate("birth").toLocalDate(),
+                        result.getString("serial_number"),
+                        result.getString("status")
+                );
+            }
+            return Optional.ofNullable(driver);
+        }
     }
 }
