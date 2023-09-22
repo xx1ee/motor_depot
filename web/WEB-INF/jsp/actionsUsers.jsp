@@ -1,3 +1,4 @@
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%--
   Created by IntelliJ IDEA.
   User: kochetova
@@ -11,8 +12,10 @@
     <title>Выберите действие</title>
 </head>
 <body>
-<a href="${pageContext.request.contextPath}/users">${"Все пользователи"}</a> <br>
-<a href="${pageContext.request.contextPath}/deleteUser">${"Удалить пользователя"}</a> <br>
-<a href="${pageContext.request.contextPath}/findUser">${"Все рейсы"}</a> <br>
+<c:if test="${sessionScope.user.toString().contains('роль - ADMIN')}">
+    <a href="${pageContext.request.contextPath}/users">${"Все пользователи"}</a> <br>
+    <a href="${pageContext.request.contextPath}/deleteUser">${"Удалить пользователя"}</a> <br>
+</c:if>
+<a href="${pageContext.request.contextPath}/findUser">${"Найти пользователя"}</a> <br>
 </body>
 </html>

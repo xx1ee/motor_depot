@@ -16,7 +16,7 @@ import java.util.Optional;
 public class TripDao implements Dao<Integer, Trip>{
     private static final TripDao INSTANCE = new TripDao();
     private static final String DELETE_SQL = """
-            DELETE FROM driver WHERE id = ?
+            DELETE FROM trip WHERE id = ?
             """;
     private static final String SAVE_SQL = """
                 INSERT INTO trip(driver_id, car_id, station_depart, station_arrival, time_depart, time_arrival, status)

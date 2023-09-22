@@ -13,7 +13,7 @@ public class UnsafeFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
-        var user = (UsersDto) ((HttpServletRequest) servletRequest).getSession();
+        var user = (UsersDto) ((HttpServletRequest) servletRequest).getSession().getAttribute("user");
         if (user != null) {
             filterChain.doFilter(servletRequest, servletResponse);
         } else {

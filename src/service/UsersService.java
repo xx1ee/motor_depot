@@ -35,8 +35,15 @@ public class UsersService {
                                 """.formatted(user.getEmail(), user.getPassword(), user.getRole()))).collect(Collectors.toList());
     }
 
-    public Optional<Users> findByEmailAndPassword(String email, String password) {
-        return usersDao.findByEmailAndPassword(email, password);
+    public List<UsersDto> findByEmailAndPassword(String email, String password) {
+        return usersDao.findByEmailAndPassword(email, password).stream()
+                .map(user -> new UsersDto(user.getId(),
+                        user.getImage(),
+                        """
+                                email - %s,
+                                пароль - %s,
+                                роль - %s,
+                                """.formatted(user.getEmail(), user.getPassword(), user.getRole()))).collect(Collectors.toList());
     }
     @SneakyThrows
     public void save(CreateUsersDto createUsersDto) {
@@ -52,6 +59,10 @@ public class UsersService {
         } else {
             throw new ValidationException(validationResult.getErrors());
         }
+    }
+
+    public void delete(Integer id) {
+        usersDao.delete(id);
     }
 
     public static UsersService getInstance() {

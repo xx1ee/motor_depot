@@ -15,7 +15,7 @@
 <%@include file="header.jsp"%>
 <ul>
   <c:forEach var ="driver"  items = "${requestScope.drivers}">
-    <li>${driver.getDescription()} </li>
+    <li>${driver.getDescription()} ${}</li>
   </c:forEach>
 </ul>
 </body>

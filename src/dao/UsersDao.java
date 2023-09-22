@@ -143,23 +143,18 @@ public class UsersDao implements  Dao<Integer, Users>{
     }
 
     @SneakyThrows
-    public Optional<Users> findByEmailAndPassword(String email, String password) {
+    public List<Users> findByEmailAndPassword(String email, String password) {
         try (var connection = ConnectionManager.get();
              var statement = connection.prepareStatement(FIND_BY_EMAIL_SQL)) {
             statement.setString(1, email);
             statement.setString(2, password);
-            var result = statement.executeQuery();
-            Users users = null;
-            if (result.next()) {
-                users = new Users(
-                        result.getInt("id"),
-                        result.getString("email"),
-                        result.getString("password"),
-                        result.getString("role"),
-                        result.getString("image")
-                );
+            var resultSet = statement.executeQuery();
+            List<Users> users = new ArrayList<>();
+
+            while (resultSet.next()) {
+                users.add(buildUsers(resultSet));
             }
-            return Optional.ofNullable(users);
+            return users;
         }
     }
 
